@@ -8,8 +8,33 @@ import { EmergencyPrompts } from './EmergencyPrompts';
 import { Header } from '@/components/layout/Header';
 import { useChat } from '@/hooks/useChat';
 
+const ANALYZING_PHRASES = [
+  'Analyzing image',
+  'Examining details',
+  'Looking closely',
+  'Processing visuals',
+  'Studying the photo',
+];
+
+function AnalyzingText() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((i) => (i + 1) % ANALYZING_PHRASES.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <span className="ml-3 text-sm text-muted-foreground/70 animate-pulse">
+      {ANALYZING_PHRASES[index]}...
+    </span>
+  );
+}
+
 export function ChatContainer() {
-  const { messages, isLoading, sendMessage, clearMessages } = useChat();
+  const { messages, isLoading, isAnalyzingImage, sendMessage, clearMessages } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [typedMessages, setTypedMessages] = useState<Set<string>>(new Set());
 
@@ -56,8 +81,9 @@ export function ChatContainer() {
             ))}
             {isLoading && (
               <div className="w-full px-4 py-4">
-                <div className="mx-auto max-w-3xl">
+                <div className="mx-auto max-w-3xl flex items-center">
                   <Loader className="size-5 animate-spin text-accent" />
+                  {isAnalyzingImage && <AnalyzingText />}
                 </div>
               </div>
             )}

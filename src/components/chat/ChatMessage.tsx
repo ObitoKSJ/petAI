@@ -17,13 +17,31 @@ export const ChatMessage = memo(function ChatMessage({
   const isUser = message.role === 'user';
 
   if (isUser) {
+    const hasImages = message.images && message.images.length > 0;
+
     // User message: right-aligned bubble
     return (
       <div className="flex w-full justify-end px-4 py-2">
         <div className="max-w-[85%] sm:max-w-[70%]">
-          <div className="rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm text-primary-foreground sm:text-base">
-            {message.content}
-          </div>
+          {/* Image attachments */}
+          {hasImages && (
+            <div className="mb-2 flex flex-wrap justify-end gap-2">
+              {message.images!.map((img) => (
+                <img
+                  key={img.id}
+                  src={img.base64}
+                  alt={img.name || 'Uploaded image'}
+                  className="max-h-32 max-w-[200px] rounded-lg object-cover"
+                />
+              ))}
+            </div>
+          )}
+          {/* Text content */}
+          {message.content && (
+            <div className="rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm text-primary-foreground sm:text-base">
+              {message.content}
+            </div>
+          )}
         </div>
       </div>
     );

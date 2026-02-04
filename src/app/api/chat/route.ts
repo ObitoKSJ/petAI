@@ -7,28 +7,40 @@ interface ChatMessage {
   content: string;
 }
 
+interface ImageData {
+  base64: string;
+}
+
+interface ChatRequestBody {
+  message: string;
+  history?: ChatMessage[];
+  images?: ImageData[];
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { message, history = [] } = await request.json() as {
-      message: string;
-      history?: ChatMessage[];
-    };
+    const { message, history = [], images } = await request.json() as ChatRequestBody;
 
-    if (!message || typeof message !== 'string') {
+    // Allow empty message if images are provided
+    const hasImages = images && images.length > 0;
+    if (!message && !hasImages) {
       return NextResponse.json(
-        { error: 'Message is required' },
+        { error: 'Message or image is required' },
         { status: 400 }
       );
     }
 
     // Debug: Log conversation state
     console.log('[Chat API] Received message with', history.length, 'history messages');
+    if (hasImages) {
+      console.log('[Chat API] Includes', images.length, 'image(s)');
+    }
     if (history.length > 0) {
       console.log('[Chat API] History preview:', history.slice(-4).map(m => `${m.role}: ${m.content.substring(0, 40)}...`));
     }
 
-    // Call KIMI with full conversation history from client
-    const response = await kimiService.chat(message, history);
+    // Call KIMI with full conversation history and optional images
+    const response = await kimiService.chat(message || '', history, images);
 
     return NextResponse.json({
       response,
@@ -36,6 +48,11 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Chat API error:', error);
+    console.error('Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
 
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error';

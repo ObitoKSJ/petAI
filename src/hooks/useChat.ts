@@ -1,37 +1,52 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import type { Message } from '@/types';
+import type { Message, ImageAttachment } from '@/types';
 import { generateId } from '@/lib/utils';
+
+interface SendMessageOptions {
+  images?: ImageAttachment[];
+}
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Use ref to always have access to current messages in sendMessage
   const messagesRef = useRef<Message[]>([]);
   messagesRef.current = messages;
 
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (content: string, options?: SendMessageOptions) => {
+    const { images } = options || {};
+
+    // Use placeholder for image-only messages (for history context)
+    const messageContent = content || (images?.length ? '[Shared an image]' : '');
+
     const userMessage: Message = {
       id: generateId(),
-      content,
+      content: messageContent,
       role: 'user',
       timestamp: new Date(),
+      images, // Store images in message for display
     };
 
     // Add user message to state
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
+    setIsAnalyzingImage(!!images?.length);
     setError(null);
 
     try {
-      // Build history from current messages (before adding new user message)
+      // Build history from current messages (text only - images are not repeated)
       const history = messagesRef.current.map((m) => ({
         role: m.role,
         content: m.content,
       }));
+
+      // Prepare images for API (just the base64 data)
+      const imageData = images?.map((img) => ({ base64: img.base64 }));
 
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -39,6 +54,7 @@ export function useChat() {
         body: JSON.stringify({
           message: content,
           history,
+          images: imageData,
         }),
       });
 
@@ -63,6 +79,7 @@ export function useChat() {
       setError(errorMsg);
     } finally {
       setIsLoading(false);
+      setIsAnalyzingImage(false);
     }
   }, []);
 
@@ -74,6 +91,7 @@ export function useChat() {
   return {
     messages,
     isLoading,
+    isAnalyzingImage,
     error,
     sendMessage,
     clearMessages,
