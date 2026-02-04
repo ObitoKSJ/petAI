@@ -3,6 +3,7 @@
 import { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { TypewriterText } from './TypewriterText';
+import { ProductCards } from './ProductCard';
 import type { Message } from '@/types';
 
 interface ChatMessageProps {
@@ -38,7 +39,7 @@ export const ChatMessage = memo(function ChatMessage({
           )}
           {/* Text content */}
           {message.content && (
-            <div className="rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm text-primary-foreground sm:text-base">
+            <div className="rounded-3xl bg-primary px-4 py-2.5 text-sm text-primary-foreground sm:text-base">
               {message.content}
             </div>
           )}
@@ -54,6 +55,9 @@ export const ChatMessage = memo(function ChatMessage({
       <div className="w-full px-4 py-4">
         <div className="mx-auto max-w-3xl text-sm leading-relaxed text-foreground/90 sm:text-base">
           <TypewriterText content={message.content} speed={4} />
+          {message.products && message.products.length > 0 && (
+            <ProductCards products={message.products} />
+          )}
         </div>
       </div>
     );
@@ -117,6 +121,9 @@ export const ChatMessage = memo(function ChatMessage({
         >
           {message.content}
         </ReactMarkdown>
+        {message.products && message.products.length > 0 && (
+          <ProductCards products={message.products} />
+        )}
       </div>
     </div>
   );

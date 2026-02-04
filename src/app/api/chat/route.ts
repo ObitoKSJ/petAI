@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { kimiService } from '@/services/kimi';
+import { aiService } from '@/services/ai';
 import { generateId } from '@/lib/utils';
 
 interface ChatMessage {
@@ -39,11 +39,12 @@ export async function POST(request: NextRequest) {
       console.log('[Chat API] History preview:', history.slice(-4).map(m => `${m.role}: ${m.content.substring(0, 40)}...`));
     }
 
-    // Call KIMI with full conversation history and optional images
-    const response = await kimiService.chat(message || '', history, images);
+    // Call AI with full conversation history and optional images
+    const result = await aiService.chat(message || '', history, images);
 
     return NextResponse.json({
-      response,
+      response: result.response,
+      products: result.products,
       messageId: generateId(),
     });
   } catch (error) {

@@ -6,6 +6,18 @@ export interface ImageAttachment {
   name?: string;
 }
 
+// Product recommendation from tool calls
+export interface Product {
+  name: string;
+  brand: string;
+  price: string;
+  description: string;
+  image_url: string;
+  product_url: string;
+  for_pets: string;
+  helps_with: string;
+}
+
 // Client-side message type
 export interface Message {
   id: string;
@@ -13,6 +25,7 @@ export interface Message {
   role: 'user' | 'assistant';
   timestamp: Date;
   images?: ImageAttachment[]; // Optional image attachments
+  products?: Product[]; // Optional product recommendations
 }
 
 // Legacy client-side session (kept for compatibility)

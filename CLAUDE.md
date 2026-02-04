@@ -32,12 +32,15 @@ src/
 │   │   └── Header          # App header
 │   └── ui/                 # shadcn components
 ├── hooks/
-│   └── useChat.ts          # Chat state management
+│   ├── useChat.ts          # Chat state management
+│   ├── useAutoScroll.ts    # ChatGPT-style anchor-to-top scrolling
+│   └── useKeyboardHeight.ts # Mobile keyboard detection (visualViewport)
 ├── lib/
 │   ├── utils.ts            # Utility functions
 │   └── prompts.ts          # AI persona & emergency prompts
 ├── services/
-│   └── kimi.ts             # KIMI API service
+│   ├── ai.ts               # Pluggable AI provider service
+│   └── zilliz.ts           # Vector search for product recommendations
 └── types/
     └── index.ts            # TypeScript interfaces
 ```
@@ -50,6 +53,29 @@ Using shadcn/ui with custom pet-care themed design tokens:
 - **Destructive (Red):** Emergency alerts
 
 Design tokens are centralized in `globals.css` using CSS variables.
+
+### Floating UI Pattern
+
+We use a **Floating UI** (chromeless) design for fixed elements:
+
+```jsx
+{/* Container: invisible, only for positioning */}
+<div className="fixed left-0 right-0 z-20 pb-safe">
+  {/* Component: the only visible element */}
+  <ChatInput />
+</div>
+```
+
+**Principles:**
+- Containers have **no visual presence** (no background, border, padding)
+- Only the actual UI component (pill-shaped input, header bar) is visible
+- Elements appear to "float" on the canvas independently
+- Use `pb-safe` / `pt-safe` for iOS safe areas on fixed elements
+
+This applies to:
+- Header (fixed top, pill-shaped bar)
+- Chat input (fixed bottom, pill-shaped input)
+- Any floating action elements
 
 ## Key Features
 

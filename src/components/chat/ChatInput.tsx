@@ -8,7 +8,7 @@ import {
   type KeyboardEvent,
   type ChangeEvent,
 } from 'react';
-import { ArrowUp, Image, X } from 'lucide-react';
+import { ArrowUp, Image, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateId } from '@/lib/utils';
 import type { ImageAttachment } from '@/types';
@@ -16,6 +16,7 @@ import type { ImageAttachment } from '@/types';
 interface ChatInputProps {
   onSend: (message: string, options?: { images?: ImageAttachment[] }) => void;
   disabled?: boolean;
+  isLoading?: boolean;
   placeholder?: string;
 }
 
@@ -26,6 +27,7 @@ const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 export function ChatInput({
   onSend,
   disabled = false,
+  isLoading = false,
   placeholder = 'Ask about your pet...',
 }: ChatInputProps) {
   const [input, setInput] = useState('');
@@ -144,16 +146,16 @@ export function ChatInput({
               multiple
               onChange={handleImageSelect}
               className="hidden"
-              disabled={disabled || images.length >= MAX_IMAGES}
+              disabled={images.length >= MAX_IMAGES}
             />
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={disabled || images.length >= MAX_IMAGES}
+              disabled={images.length >= MAX_IMAGES}
               className={cn(
                 'absolute left-3 sm:left-2.5 z-10 flex size-8 sm:size-7 items-center justify-center rounded-full',
                 'transition-all duration-200',
-                disabled || images.length >= MAX_IMAGES
+                images.length >= MAX_IMAGES
                   ? 'text-muted-foreground/30 cursor-not-allowed'
                   : 'text-muted-foreground/60 hover:text-primary hover:bg-primary/10'
               )}
@@ -168,28 +170,32 @@ export function ChatInput({
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
-              disabled={disabled}
               className={cn(
                 'w-full rounded-full bg-foreground/10 backdrop-blur-md py-4 pl-12 pr-14 sm:py-3 sm:pl-10 sm:pr-12',
                 'text-base sm:text-sm placeholder:text-muted-foreground/60',
-                'outline-none',
-                disabled && 'opacity-50 cursor-not-allowed'
+                'outline-none'
               )}
               aria-label="Chat message input"
             />
             <button
               type="submit"
-              disabled={!canSend}
+              disabled={!canSend || isLoading}
               className={cn(
                 'absolute right-2.5 sm:right-2 flex size-10 sm:size-8 items-center justify-center rounded-full',
                 'transition-all duration-200',
-                canSend
-                  ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                  : 'bg-muted-foreground/20 text-muted-foreground/40'
+                isLoading
+                  ? 'bg-muted-foreground/20 text-muted-foreground/60'
+                  : canSend
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    : 'bg-muted-foreground/20 text-muted-foreground/40'
               )}
-              aria-label="Send message"
+              aria-label={isLoading ? 'Loading' : 'Send message'}
             >
-              <ArrowUp className="size-5 sm:size-4" strokeWidth={2.5} />
+              {isLoading ? (
+                <Loader2 className="size-5 sm:size-4 animate-spin" />
+              ) : (
+                <ArrowUp className="size-5 sm:size-4" strokeWidth={2.5} />
+              )}
             </button>
           </div>
         </form>

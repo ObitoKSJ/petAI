@@ -1,12 +1,14 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { Loader } from 'lucide-react';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { EmergencyPrompts } from './EmergencyPrompts';
 import { Header } from '@/components/layout/Header';
 import { useChat } from '@/hooks/useChat';
+import { useKeyboardHeight } from '@/hooks/useKeyboardHeight';
+import { useAutoScroll } from '@/hooks/useAutoScroll';
 
 const ANALYZING_PHRASES = [
   'Analyzing image',
@@ -33,20 +35,56 @@ function AnalyzingText() {
   );
 }
 
+// Fixed element heights
+const HEADER_HEIGHT = 64;
+const INPUT_HEIGHT = 80;
+
 export function ChatContainer() {
   const { messages, isLoading, isAnalyzingImage, sendMessage, clearMessages } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [typedMessages, setTypedMessages] = useState<Set<string>>(new Set());
+  const keyboardHeight = useKeyboardHeight();
+  const prevMessageCountRef = useRef(0);
 
+  // Auto-scroll hook with anchor-to-top pattern
+  const { containerRef, anchorRef, isAtBottom, scrollToAnchor } = useAutoScroll({
+    isStreaming: isLoading,
+    topOffset: HEADER_HEIGHT,
+  });
+
+  // Find the last user message index (this will be our anchor)
+  const lastUserMessageIndex = messages.findLastIndex((m) => m.role === 'user');
+
+  // Scroll to anchor when a NEW user message is added
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const currentCount = messages.length;
+    const lastMessage = messages[messages.length - 1];
 
-  // Track newly typed messages
+    // Only trigger on new user message (not on assistant response)
+    if (
+      currentCount > prevMessageCountRef.current &&
+      lastMessage?.role === 'user'
+    ) {
+      // Small delay to let DOM update, then scroll to anchor
+      requestAnimationFrame(() => {
+        scrollToAnchor();
+      });
+    }
+
+    prevMessageCountRef.current = currentCount;
+  }, [messages, scrollToAnchor]);
+
+  // Scroll to bottom when keyboard opens (but only if already at bottom)
+  useEffect(() => {
+    if (keyboardHeight > 0 && isAtBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [keyboardHeight, isAtBottom]);
+
+  // Track newly typed messages for typewriter effect
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
     if (lastMessage?.role === 'assistant' && !typedMessages.has(lastMessage.id)) {
-      // Mark as typed after a brief delay to allow typewriter to start
       const timer = setTimeout(() => {
         setTypedMessages((prev) => new Set([...prev, lastMessage.id]));
       }, 100);
@@ -54,47 +92,73 @@ export function ChatContainer() {
     }
   }, [messages, typedMessages]);
 
+  // Calculate bottom padding for messages to account for fixed input
+  const bottomPadding = INPUT_HEIGHT + keyboardHeight;
+
+  // Wrap sendMessage to handle scroll behavior
+  const handleSendMessage = useCallback(
+    (message: string, options?: { images?: Array<{ id: string; base64: string; mimeType: string; name?: string }> }) => {
+      sendMessage(message, options);
+    },
+    [sendMessage]
+  );
+
   return (
-    <div className="relative h-full overflow-y-auto bg-background">
-      {/* Header - sticky at top */}
-      <div className="sticky top-0 z-10">
+    <div className="relative h-full bg-background">
+      {/* Header - fixed at top */}
+      <div className="fixed top-0 left-0 right-0 z-20 pt-safe">
         <Header onClearChat={messages.length > 0 ? clearMessages : undefined} />
       </div>
 
-      {/* Messages area */}
-      <main className="min-h-[calc(100%-7rem)]">
+      {/* Messages area - scrollable with elastic overscroll */}
+      <main
+        ref={containerRef as React.RefObject<HTMLElement>}
+        className="h-full overflow-y-auto"
+        style={{ paddingTop: HEADER_HEIGHT, paddingBottom: bottomPadding }}
+      >
         {messages.length === 0 ? (
           <div className="flex h-full min-h-[50vh] flex-col items-center justify-center p-4">
             <h1 className="text-center mb-8 sm:mb-6 font-[family-name:var(--font-playwrite)] text-2xl sm:text-xl italic">
               <span className="text-foreground/80"> How can I help you now?</span>
             </h1>
-            <EmergencyPrompts onSelect={sendMessage} disabled={isLoading} />
+            <EmergencyPrompts onSelect={handleSendMessage} disabled={isLoading} />
           </div>
         ) : (
-          <div className="py-4">
-            {messages.map((message) => (
-              <ChatMessage
+          <div className="pt-4 pb-4">
+            {/* Top spacer for overscroll room */}
+            <div className="h-8" />
+            {messages.map((message, index) => (
+              <div
                 key={message.id}
-                message={message}
-                isNew={message.role === 'assistant' && !typedMessages.has(message.id)}
-              />
+                ref={index === lastUserMessageIndex ? anchorRef : undefined}
+              >
+                <ChatMessage
+                  message={message}
+                  isNew={message.role === 'assistant' && !typedMessages.has(message.id)}
+                />
+              </div>
             ))}
             {isLoading && (
               <div className="w-full px-4 py-4">
                 <div className="mx-auto max-w-3xl flex items-center">
-                  <Loader className="size-5 animate-spin text-accent" />
+                  <Loader className="size-5 animate-spin text-muted-foreground/60" />
                   {isAnalyzingImage && <AnalyzingText />}
                 </div>
               </div>
             )}
+            {/* Spacer to allow anchor to scroll near top */}
+            <div className="min-h-[50vh]" />
             <div ref={messagesEndRef} />
           </div>
         )}
       </main>
 
-      {/* Input area - sticky at bottom */}
-      <div className="sticky bottom-0 z-10 pb-safe">
-        <ChatInput onSend={sendMessage} disabled={isLoading} />
+      {/* Input area - fixed at bottom, moves with keyboard */}
+      <div
+        className="fixed left-0 right-0 z-20 pb-safe"
+        style={{ bottom: keyboardHeight }}
+      >
+        <ChatInput onSend={handleSendMessage} disabled={isLoading} isLoading={isLoading} />
       </div>
     </div>
   );

@@ -69,6 +69,7 @@ export function useChat() {
         content: data.response,
         role: 'assistant',
         timestamp: new Date(),
+        products: data.products, // Include product recommendations
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
