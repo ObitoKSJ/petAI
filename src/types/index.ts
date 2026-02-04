@@ -1,9 +1,18 @@
+// Image attachment for messages
+export interface ImageAttachment {
+  id: string;
+  base64: string; // data:image/xxx;base64,...
+  mimeType: string;
+  name?: string;
+}
+
 // Client-side message type
 export interface Message {
   id: string;
   content: string;
   role: 'user' | 'assistant';
   timestamp: Date;
+  images?: ImageAttachment[]; // Optional image attachments
 }
 
 // Legacy client-side session (kept for compatibility)
