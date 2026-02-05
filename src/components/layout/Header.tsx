@@ -17,12 +17,12 @@ export function Header({ onClearChat }: HeaderProps) {
               className="hover:scale-110 transition-transform text-primary"
               aria-label="Return to home"
             >
-              <PawPrint className="size-6" />
+              <PawPrint className="size-6" strokeWidth={1.5} />
             </button>
           ) : (
-            <PawPrint className="size-6 text-primary" />
+            <PawPrint className="size-6 text-primary" strokeWidth={1.5} />
           )}
-          <span className="font-[family-name:var(--font-playwrite)] text-lg text-foreground/80 italic">PetCare AI</span>
+          <span className="font-[family-name:var(--font-playwrite)] text-lg text-foreground/80 italic">PetCare</span>
         </div>
       </div>
     </header>

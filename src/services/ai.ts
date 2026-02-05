@@ -18,21 +18,23 @@ type ProviderConfig = {
   visionModel: string;
   temperature?: number; // Some models require specific temperature
   supportsVision: boolean;
+  useMaxCompletionTokens?: boolean; // GPT-5+ models use max_completion_tokens instead of max_tokens
 };
 
 const PROVIDERS: Record<string, ProviderConfig> = {
   kimi: {
     baseUrl: 'https://api.moonshot.cn/v1',
-    model: 'kimi-k2.5',
+    model: 'kimi-k2-thinking-turbo',
     visionModel: 'kimi-k2.5',
     temperature: 1, // K2.5 requires temperature=1
     supportsVision: true,
   },
   openai: {
     baseUrl: 'https://api.openai.com/v1',
-    model: 'gpt-4o-mini',
-    visionModel: 'gpt-4o',
+    model: 'gpt-5-nano-2025-08-07',
+    visionModel: 'gpt-5-nano-2025-08-07',
     supportsVision: true,
+    useMaxCompletionTokens: true, // GPT-5 models require this
   },
   deepseek: {
     baseUrl: 'https://api.deepseek.com/v1',
@@ -187,10 +189,16 @@ export class AIService {
       const requestBody: Record<string, unknown> = {
         model: modelToUse,
         messages,
-        max_tokens: 1024,
         tools: ALL_TOOLS,
         tool_choice: 'auto',
       };
+
+      // Use correct token limit parameter based on provider
+      if (this.config.useMaxCompletionTokens) {
+        requestBody.max_completion_tokens = 1024;
+      } else {
+        requestBody.max_tokens = 1024;
+      }
 
       // Add temperature if provider requires it
       if (this.config.temperature !== undefined) {
@@ -224,11 +232,15 @@ export class AIService {
 
       const data: ChatCompletionResponse = await response.json();
 
+      // Debug: log the full response structure
+      console.log(`[AI Service] Response from ${this.provider}:`, JSON.stringify(data, null, 2));
+
       if (!data.choices || data.choices.length === 0) {
         throw new Error('No response from AI');
       }
 
       const assistantMessage = data.choices[0].message;
+      console.log(`[AI Service] Assistant message:`, assistantMessage);
 
       // Check if AI wants to call tools
       if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {

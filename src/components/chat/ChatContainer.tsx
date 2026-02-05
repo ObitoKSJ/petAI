@@ -117,11 +117,13 @@ export function ChatContainer() {
         style={{ paddingTop: HEADER_HEIGHT, paddingBottom: bottomPadding }}
       >
         {messages.length === 0 ? (
-          <div className="flex h-full min-h-[50vh] flex-col items-center justify-center p-4">
-            <h1 className="text-center mb-8 sm:mb-6 font-[family-name:var(--font-playwrite)] text-2xl sm:text-xl italic">
-              <span className="text-foreground/80"> How can I help you now?</span>
+          <div className="flex h-full min-h-[60vh] flex-col items-center p-4">
+            <h1 className="mt-8 text-center font-[family-name:var(--font-playwrite)] text-xl italic whitespace-nowrap">
+              <span className="text-foreground/80">How can I help you today?</span>
             </h1>
+            <div className="flex-1" />
             <EmergencyPrompts onSelect={handleSendMessage} disabled={isLoading} />
+            <div className="flex-1" />
           </div>
         ) : (
           <div className="pt-4 pb-4">
