@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import type { Message, ImageAttachment } from '@/types';
 import { generateId } from '@/lib/utils';
+import { useTranslation } from '@/i18n';
 
 interface SendMessageOptions {
   images?: ImageAttachment[];
@@ -13,6 +14,7 @@ export function useChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   // Use ref to always have access to current messages in sendMessage
   const messagesRef = useRef<Message[]>([]);
@@ -22,7 +24,7 @@ export function useChat() {
     const { images } = options || {};
 
     // Use placeholder for image-only messages (for history context)
-    const messageContent = content || (images?.length ? '[Shared an image]' : '');
+    const messageContent = content || (images?.length ? t('chat.sharedImage') : '');
 
     const userMessage: Message = {
       id: generateId(),
@@ -61,7 +63,7 @@ export function useChat() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Chat request failed');
+        throw new Error(data.error || t('chat.requestFailed'));
       }
 
       const assistantMessage: Message = {
@@ -75,14 +77,14 @@ export function useChat() {
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
       const errorMsg =
-        err instanceof Error ? err.message : 'Failed to send message';
+        err instanceof Error ? err.message : t('chat.sendFailed');
       console.error('Failed to send message:', err);
       setError(errorMsg);
     } finally {
       setIsLoading(false);
       setIsAnalyzingImage(false);
     }
-  }, []);
+  }, [t]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);

@@ -176,28 +176,8 @@ When you're helping with a health concern and want to suggest products:
 Remember: A good consultation takes time. Rushing to answers without understanding the situation can lead to wrong advice. You're their trusted guide through this!`;
 
 export const QUICK_PROMPTS = [
-  {
-    id: 'new-pet',
-    label: 'New Pet Parent',
-    image: '/newParent.jpg',
-    message: "I just got a new pet and I'm not sure where to start. What should I know?",
-  },
-  {
-    id: 'feeding',
-    label: 'Feeding Tips',
-    image: '/feedIssue.jpg',
-    message: "What should I feed my pet and how much? Any tips for a healthy diet?",
-  },
-  {
-    id: 'normal',
-    label: 'Is This Normal?',
-    image: '/normal.jpg',
-    message: "My pet is doing something and I'm not sure if it's normal behavior.",
-  },
-  {
-    id: 'vet-visit',
-    label: 'When to See Vet',
-    image: '/takeToVet.jpg',
-    message: "How do I know when I should take my pet to the vet versus handling it at home?",
-  },
+  { id: 'new-pet', tKey: 'newPet', image: '/newParent.jpg' },
+  { id: 'feeding', tKey: 'feeding', image: '/feedIssue.jpg' },
+  { id: 'normal', tKey: 'normal', image: '/normal.jpg' },
+  { id: 'vet-visit', tKey: 'vetVisit', image: '/takeToVet.jpg' },
 ];

@@ -9,28 +9,24 @@ import { Header } from '@/components/layout/Header';
 import { useChat } from '@/hooks/useChat';
 import { useKeyboardHeight } from '@/hooks/useKeyboardHeight';
 import { useAutoScroll } from '@/hooks/useAutoScroll';
+import { useTranslation } from '@/i18n';
 
-const ANALYZING_PHRASES = [
-  'Analyzing image',
-  'Examining details',
-  'Looking closely',
-  'Processing visuals',
-  'Studying the photo',
-];
+const ANALYZING_PHRASE_COUNT = 5;
 
 function AnalyzingText() {
   const [index, setIndex] = useState(0);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setIndex((i) => (i + 1) % ANALYZING_PHRASES.length);
+      setIndex((i) => (i + 1) % ANALYZING_PHRASE_COUNT);
     }, 2000);
     return () => clearInterval(interval);
   }, []);
 
   return (
     <span className="ml-3 text-sm text-muted-foreground/70 animate-pulse">
-      {ANALYZING_PHRASES[index]}...
+      {t(`analyzing.${index}`)}...
     </span>
   );
 }
@@ -45,6 +41,7 @@ export function ChatContainer() {
   const [typedMessages, setTypedMessages] = useState<Set<string>>(new Set());
   const keyboardHeight = useKeyboardHeight();
   const prevMessageCountRef = useRef(0);
+  const { t } = useTranslation();
 
   // Auto-scroll hook with anchor-to-top pattern
   const { containerRef, anchorRef, isAtBottom, scrollToAnchor } = useAutoScroll({
@@ -119,7 +116,7 @@ export function ChatContainer() {
         {messages.length === 0 ? (
           <div className="flex h-full min-h-[60vh] flex-col items-center p-4">
             <h1 className="mt-8 text-center font-[family-name:var(--font-playwrite)] text-xl italic whitespace-nowrap">
-              <span className="text-foreground/80">How can I help you today?</span>
+              <span className="text-foreground/80">{t('welcome')}</span>
             </h1>
             <div className="flex-1" />
             <EmergencyPrompts onSelect={handleSendMessage} disabled={isLoading} />

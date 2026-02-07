@@ -11,13 +11,13 @@ import {
 import { ArrowUp, Image, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateId } from '@/lib/utils';
+import { useTranslation } from '@/i18n';
 import type { ImageAttachment } from '@/types';
 
 interface ChatInputProps {
   onSend: (message: string, options?: { images?: ImageAttachment[] }) => void;
   disabled?: boolean;
   isLoading?: boolean;
-  placeholder?: string;
 }
 
 const MAX_IMAGES = 4;
@@ -28,11 +28,11 @@ export function ChatInput({
   onSend,
   disabled = false,
   isLoading = false,
-  placeholder = 'Ask about your pet...',
 }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [images, setImages] = useState<ImageAttachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
 
   const handleImageSelect = useCallback(
     async (e: ChangeEvent<HTMLInputElement>) => {
@@ -120,14 +120,14 @@ export function ChatInput({
               <div key={img.id} className="relative group">
                 <img
                   src={img.base64}
-                  alt={img.name || 'Uploaded image'}
+                  alt={img.name || t('message.uploadedImage')}
                   className="size-16 rounded-lg object-cover border border-border/50"
                 />
                 <button
                   type="button"
                   onClick={() => removeImage(img.id)}
                   className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  aria-label="Remove image"
+                  aria-label={t('input.removeImage')}
                 >
                   <X className="size-3" />
                 </button>
@@ -159,7 +159,7 @@ export function ChatInput({
                   ? 'text-muted-foreground/30 cursor-not-allowed'
                   : 'text-muted-foreground/60 hover:text-primary hover:bg-primary/10'
               )}
-              aria-label="Upload image"
+              aria-label={t('input.uploadImage')}
             >
               <Image className="size-5 sm:size-4" />
             </button>
@@ -169,7 +169,7 @@ export function ChatInput({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={placeholder}
+              placeholder={t('input.placeholder')}
               className={cn(
                 'w-full rounded-full bg-foreground/10 backdrop-blur-md py-4 pl-12 pr-14 sm:py-3 sm:pl-10 sm:pr-12',
                 'text-base sm:text-sm placeholder:text-muted-foreground/60',
@@ -189,7 +189,7 @@ export function ChatInput({
                     ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                     : 'bg-muted-foreground/20 text-muted-foreground/40'
               )}
-              aria-label={isLoading ? 'Loading' : 'Send message'}
+              aria-label={isLoading ? t('input.loading') : t('input.send')}
             >
               {isLoading ? (
                 <Loader2 className="size-5 sm:size-4 animate-spin" />

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from '@/i18n';
 import type { Product } from '@/types';
 
 interface ProductCardProps {
@@ -9,6 +10,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <div
@@ -59,7 +61,7 @@ export function ProductCard({ product }: ProductCardProps) {
             {/* Helps with */}
             {product.helps_with && (
               <div className="mb-3">
-                <p className="text-xs font-medium text-accent">Helps with</p>
+                <p className="text-xs font-medium text-accent">{t('product.helpsWith')}</p>
                 <p className="text-xs text-muted-foreground">{product.helps_with}</p>
               </div>
             )}
@@ -68,17 +70,17 @@ export function ProductCard({ product }: ProductCardProps) {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => alert('Add to Cart - Demo placeholder')}
+                onClick={() => alert(t('product.addToCartDemo'))}
                 className="flex-1 rounded-lg border border-primary bg-transparent px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
               >
-                Add to Cart
+                {t('product.addToCart')}
               </button>
               <button
                 type="button"
-                onClick={() => alert('Purchase Now - Demo placeholder')}
+                onClick={() => alert(t('product.buyNowDemo'))}
                 className="flex-1 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
-                Buy Now
+                {t('product.buyNow')}
               </button>
             </div>
           </div>

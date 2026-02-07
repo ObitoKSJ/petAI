@@ -4,6 +4,7 @@ import { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { TypewriterText } from './TypewriterText';
 import { ProductCards } from './ProductCard';
+import { useTranslation } from '@/i18n';
 import type { Message } from '@/types';
 
 interface ChatMessageProps {
@@ -16,6 +17,7 @@ export const ChatMessage = memo(function ChatMessage({
   isNew = false,
 }: ChatMessageProps) {
   const isUser = message.role === 'user';
+  const { t } = useTranslation();
 
   if (isUser) {
     const hasImages = message.images && message.images.length > 0;
@@ -31,7 +33,7 @@ export const ChatMessage = memo(function ChatMessage({
                 <img
                   key={img.id}
                   src={img.base64}
-                  alt={img.name || 'Uploaded image'}
+                  alt={img.name || t('message.uploadedImage')}
                   className="max-h-32 max-w-[200px] rounded-lg object-cover"
                 />
               ))}

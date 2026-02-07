@@ -1,12 +1,19 @@
 'use client';
 
-import { PawPrint } from 'lucide-react';
+import { PawPrint, Languages } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 interface HeaderProps {
   onClearChat?: () => void;
 }
 
 export function Header({ onClearChat }: HeaderProps) {
+  const { t, locale, setLocale } = useTranslation();
+
+  const toggleLocale = () => {
+    setLocale(locale === 'zh' ? 'en' : 'zh');
+  };
+
   return (
     <header className="w-full px-4 pt-2">
       <div className="mx-auto max-w-3xl">
@@ -15,7 +22,7 @@ export function Header({ onClearChat }: HeaderProps) {
             <button
               onClick={onClearChat}
               className="hover:scale-110 transition-transform text-primary"
-              aria-label="Return to home"
+              aria-label={t('header.returnHome')}
             >
               <PawPrint className="size-6" strokeWidth={1.5} />
             </button>
@@ -23,6 +30,12 @@ export function Header({ onClearChat }: HeaderProps) {
             <PawPrint className="size-6 text-primary" strokeWidth={1.5} />
           )}
           <span className="font-[family-name:var(--font-playwrite)] text-lg text-foreground/80 italic">PetCare</span>
+          <button
+            onClick={toggleLocale}
+            className="flex items-center gap-1 text-xs font-medium text-foreground/60 hover:text-foreground/90 transition-colors px-2 py-1 rounded-full hover:bg-foreground/5"
+          >
+            <Languages className="size-4" strokeWidth={1.5} />
+          </button>
         </div>
       </div>
     </header>
