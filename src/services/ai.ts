@@ -24,7 +24,7 @@ type ProviderConfig = {
 const PROVIDERS: Record<string, ProviderConfig> = {
   kimi: {
     baseUrl: 'https://api.moonshot.cn/v1',
-    model: 'kimi-k2-thinking-turbo',
+    model: 'kimi-k2-turbo-preview',
     visionModel: 'kimi-k2.5',
     temperature: 1, // K2.5 requires temperature=1
     supportsVision: true,
@@ -183,6 +183,9 @@ export class AIService {
       ? this.config.visionModel
       : this.config.model;
 
+    // Collect content from all iterations (AI may write analysis before calling tools)
+    const contentParts: string[] = [];
+
     // Tool call loop - AI may call tools multiple times
     const MAX_TOOL_ITERATIONS = 3;
     for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
@@ -242,6 +245,11 @@ export class AIService {
       const assistantMessage = data.choices[0].message;
       console.log(`[AI Service] Assistant message:`, assistantMessage);
 
+      // Collect any content from this iteration
+      if (assistantMessage.content) {
+        contentParts.push(assistantMessage.content);
+      }
+
       // Check if AI wants to call tools
       if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
         console.log(`[AI Service] AI requested ${assistantMessage.tool_calls.length} tool call(s)`);
@@ -290,9 +298,9 @@ export class AIService {
         continue;
       }
 
-      // No tool calls - return the response with collected products
+      // No tool calls - return accumulated response with collected products
       return {
-        response: assistantMessage.content || '',
+        response: contentParts.join('\n\n'),
         products: collectedProducts,
       };
     }
