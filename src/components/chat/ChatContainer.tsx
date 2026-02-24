@@ -36,7 +36,7 @@ const HEADER_HEIGHT = 64;
 const INPUT_HEIGHT = 80;
 
 export function ChatContainer() {
-  const { messages, isLoading, isAnalyzingImage, sendMessage, clearMessages } = useChat();
+  const { messages, isLoading, isAnalyzingImage, sendMessage, newConversation } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [typedMessages, setTypedMessages] = useState<Set<string>>(new Set());
   const keyboardHeight = useKeyboardHeight();
@@ -104,7 +104,7 @@ export function ChatContainer() {
     <div className="relative h-full bg-background">
       {/* Header - fixed at top */}
       <div className="fixed top-0 left-0 right-0 z-20 pt-safe">
-        <Header onClearChat={messages.length > 0 ? clearMessages : undefined} />
+        <Header onClearChat={messages.length > 0 ? newConversation : undefined} />
       </div>
 
       {/* Messages area - scrollable with elastic overscroll */}

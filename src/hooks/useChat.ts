@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import type { Message, ImageAttachment } from '@/types';
+import type { Message, ImageAttachment, Product } from '@/types';
 import { generateId } from '@/lib/utils';
 import { useTranslation } from '@/i18n';
 
@@ -14,16 +14,43 @@ export function useChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const { t } = useTranslation();
 
-  // Use ref to always have access to current messages in sendMessage
   const messagesRef = useRef<Message[]>([]);
   messagesRef.current = messages;
+
+  const uploadImages = useCallback(async (images: ImageAttachment[]): Promise<string[]> => {
+    const urls: string[] = [];
+    for (const img of images) {
+      const res = await fetch(img.base64);
+      const blob = await res.blob();
+      const file = new File([blob], img.name || 'image.jpg', { type: img.mimeType });
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+      if (uploadRes.ok) {
+        const { url } = await uploadRes.json();
+        urls.push(url);
+      }
+    }
+    return urls;
+  }, []);
+
+  const ensureConversation = useCallback(async (): Promise<string> => {
+    if (conversationId) return conversationId;
+
+    const res = await fetch('/api/conversations', { method: 'POST' });
+    const data = await res.json();
+    setConversationId(data.id);
+    return data.id;
+  }, [conversationId]);
 
   const sendMessage = useCallback(async (content: string, options?: SendMessageOptions) => {
     const { images } = options || {};
 
-    // Use placeholder for image-only messages (for history context)
     const messageContent = content || (images?.length ? t('chat.sharedImage') : '');
 
     const userMessage: Message = {
@@ -31,32 +58,32 @@ export function useChat() {
       content: messageContent,
       role: 'user',
       timestamp: new Date(),
-      images, // Store images in message for display
+      images,
     };
 
-    // Add user message to state
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
     setIsAnalyzingImage(!!images?.length);
     setError(null);
 
     try {
-      // Build history from current messages (text only - images are not repeated)
-      const history = messagesRef.current.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+      const convoId = await ensureConversation();
 
-      // Prepare images for API (just the base64 data)
-      const imageData = images?.map((img) => ({ base64: img.base64 }));
+      let imageUrls: string[] = [];
+      if (images?.length) {
+        imageUrls = await uploadImages(images);
+      }
 
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: content,
-          history,
-          images: imageData,
+          conversationId: convoId,
+          images: images?.map((img, i) => ({
+            base64: img.base64,
+            url: imageUrls[i],
+          })),
         }),
       });
 
@@ -67,26 +94,49 @@ export function useChat() {
       }
 
       const assistantMessage: Message = {
-        id: data.messageId || generateId(),
+        id: generateId(),
         content: data.response,
         role: 'assistant',
         timestamp: new Date(),
-        products: data.products, // Include product recommendations
+        products: data.products,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
-      const errorMsg =
-        err instanceof Error ? err.message : t('chat.sendFailed');
+      const errorMsg = err instanceof Error ? err.message : t('chat.sendFailed');
       console.error('Failed to send message:', err);
       setError(errorMsg);
     } finally {
       setIsLoading(false);
       setIsAnalyzingImage(false);
     }
-  }, [t]);
+  }, [t, ensureConversation, uploadImages]);
 
-  const clearMessages = useCallback(() => {
+  const loadConversation = useCallback(async (convoId: string) => {
+    setConversationId(convoId);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/conversations/${convoId}/messages`);
+      const data = await res.json();
+
+      const loaded: Message[] = data.map((m: { id: string; role: string; content: string; imageUrls?: string[]; products?: Product[]; createdAt: string }) => ({
+        id: m.id,
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+        timestamp: new Date(m.createdAt),
+        imageUrls: m.imageUrls,
+        products: m.products,
+      }));
+
+      setMessages(loaded);
+    } catch (err) {
+      console.error('Failed to load conversation:', err);
+    }
+  }, []);
+
+  const newConversation = useCallback(() => {
+    setConversationId(null);
     setMessages([]);
     setError(null);
   }, []);
@@ -96,7 +146,9 @@ export function useChat() {
     isLoading,
     isAnalyzingImage,
     error,
+    conversationId,
     sendMessage,
-    clearMessages,
+    loadConversation,
+    newConversation,
   };
 }
