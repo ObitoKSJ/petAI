@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Loader } from 'lucide-react';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
@@ -10,6 +11,7 @@ import { useChat } from '@/hooks/useChat';
 import { useKeyboardHeight } from '@/hooks/useKeyboardHeight';
 import { useAutoScroll } from '@/hooks/useAutoScroll';
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 const ANALYZING_PHRASE_COUNT = 5;
 
@@ -35,13 +37,23 @@ function AnalyzingText() {
 const HEADER_HEIGHT = 64;
 const INPUT_HEIGHT = 80;
 
+interface Conversation {
+  id: string;
+  title: string;
+  updatedAt: string;
+}
+
 export function ChatContainer() {
-  const { messages, isLoading, isAnalyzingImage, sendMessage, newConversation } = useChat();
+  const { messages, isLoading, isAnalyzingImage, conversationId, sendMessage, loadConversation, newConversation } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [typedMessages, setTypedMessages] = useState<Set<string>>(new Set());
   const keyboardHeight = useKeyboardHeight();
   const prevMessageCountRef = useRef(0);
   const { t } = useTranslation();
+  const router = useRouter();
+
+  const [showHistory, setShowHistory] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
 
   // Auto-scroll hook with anchor-to-top pattern
   const { containerRef, anchorRef, isAtBottom, scrollToAnchor } = useAutoScroll({
@@ -100,11 +112,89 @@ export function ChatContainer() {
     [sendMessage]
   );
 
+  const fetchConversations = useCallback(async () => {
+    try {
+      const res = await fetch('/api/conversations');
+      if (res.ok) {
+        const data = await res.json();
+        setConversations(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch conversations:', err);
+    }
+  }, []);
+
+  const handleOpenHistory = useCallback(() => {
+    setShowHistory(true);
+    fetchConversations();
+  }, [fetchConversations]);
+
+  const handleSelectConversation = useCallback((id: string) => {
+    loadConversation(id);
+    setShowHistory(false);
+  }, [loadConversation]);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/login');
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  }, [router]);
+
   return (
     <div className="relative h-full bg-background">
+      {/* Conversation History Drawer */}
+      {showHistory && (
+        <div className="fixed inset-0 z-30 flex">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setShowHistory(false)}
+          />
+          {/* Drawer */}
+          <div className="relative w-72 max-w-[80vw] h-full bg-background shadow-xl overflow-y-auto pt-safe">
+            <div className="p-4">
+              <h2 className="text-lg font-semibold text-foreground/80 mb-4">
+                {t('history.title') || 'Chat History'}
+              </h2>
+              {conversations.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t('history.empty') || 'No conversations yet'}</p>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {conversations.map((convo) => (
+                    <button
+                      key={convo.id}
+                      onClick={() => handleSelectConversation(convo.id)}
+                      className={cn(
+                        'text-left px-3 py-2 rounded-lg text-sm transition-colors',
+                        'hover:bg-foreground/5',
+                        convo.id === conversationId && 'bg-primary/10 text-primary'
+                      )}
+                    >
+                      <p className="truncate font-medium">
+                        {convo.title || 'New conversation'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {new Date(convo.updatedAt).toLocaleDateString()}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header - fixed at top */}
       <div className="fixed top-0 left-0 right-0 z-20 pt-safe">
-        <Header onClearChat={messages.length > 0 ? newConversation : undefined} />
+        <Header
+          onNewChat={newConversation}
+          onOpenHistory={handleOpenHistory}
+          onLogout={handleLogout}
+        />
       </div>
 
       {/* Messages area - scrollable with elastic overscroll */}
