@@ -3,7 +3,7 @@
 // =============================================================================
 
 const COLLECTION_NAME = 'pet_products';
-const VECTOR_DIM = 512; // OpenAI text-embedding-3-small (reduced from 1536)
+const VECTOR_DIM = 512; // jina-embeddings-v3 (Matryoshka, 512-dim)
 
 function getConfig() {
   const endpoint = process.env.ZILLIZ_ENDPOINT;
@@ -134,32 +134,43 @@ export async function createCollection(): Promise<void> {
 }
 
 // =============================================================================
-// Embedding using OpenAI (text-embedding-3-small)
+// Embedding using Jina AI (jina-embeddings-v3, globally accessible incl. HK)
+// Get a free API key (10M tokens, no credit card) at https://jina.ai/embeddings
 // =============================================================================
 
-async function generateEmbedding(text: string): Promise<number[]> {
-  const apiKey = process.env.OPENAI_API_KEY;
+/**
+ * task: 'retrieval.passage' when indexing documents,
+ *       'retrieval.query'   when embedding a search query.
+ * Using task-specific LoRA adapters improves retrieval quality.
+ */
+async function generateEmbedding(
+  text: string,
+  task: 'retrieval.passage' | 'retrieval.query' = 'retrieval.query'
+): Promise<number[]> {
+  const apiKey = process.env.JINA_API_KEY;
 
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY required for embeddings');
+    throw new Error('JINA_API_KEY required for embeddings. Get a free key at https://jina.ai/embeddings');
   }
 
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
+  const response = await fetch('https://api.jina.ai/v1/embeddings', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'text-embedding-3-small',
-      input: text,
-      dimensions: VECTOR_DIM, // Reduce dimensions to save cost
+      model: 'jina-embeddings-v3',
+      input: [text],
+      task,
+      dimensions: VECTOR_DIM,
+      normalized: true,
     }),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`OpenAI Embedding error: ${response.status} - ${error}`);
+    throw new Error(`Jina Embedding error: ${response.status} - ${error}`);
   }
 
   const data = await response.json();
@@ -172,7 +183,7 @@ async function generateEmbedding(text: string): Promise<number[]> {
 
 export async function insertProduct(product: Product): Promise<void> {
   const textForEmbedding = `${product.name}. ${product.description}. Category: ${product.category}. For: ${product.pet_types.join(', ')}. Conditions: ${product.conditions.join(', ')}`;
-  const vector = await generateEmbedding(textForEmbedding);
+  const vector = await generateEmbedding(textForEmbedding, 'retrieval.passage');
 
   await zillizRequest('/entities/insert', {
     collectionName: COLLECTION_NAME,
@@ -220,7 +231,7 @@ export async function searchProducts(
     limit?: number;
   }
 ): Promise<Product[]> {
-  const vector = await generateEmbedding(query);
+  const vector = await generateEmbedding(query, 'retrieval.query');
   const limit = options?.limit || 5;
 
   // Build filter expression
