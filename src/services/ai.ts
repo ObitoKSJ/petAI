@@ -23,7 +23,7 @@ type ProviderConfig = {
 
 const PROVIDERS: Record<string, ProviderConfig> = {
   kimi: {
-    baseUrl: 'https://api.moonshot.cn/v1',
+    baseUrl: 'https://api.moonshot.ai/v1',
     model: 'kimi-k2-turbo-preview',
     visionModel: 'kimi-k2.5',
     temperature: 1, // K2.5 requires temperature=1
