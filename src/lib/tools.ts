@@ -38,7 +38,7 @@ DO NOT use this for general questions - only when product recommendations would 
             'first-aid',
             'dental-care',
             'joint-health',
-            'flea-tick',
+            'pest-prevention',
             'nutrition',
           ],
           description: 'Optional category to filter results',
@@ -98,7 +98,7 @@ export async function executeToolCall(toolCall: ToolCall): Promise<string> {
       const formattedProducts = products.map((p) => ({
         name: p.name,
         brand: p.brand,
-        price: `$${p.price.toFixed(2)}`,
+        price: `¥${Math.round(p.price)}`,
         description: p.description,
         image_url: p.image_url,
         product_url: p.product_url,
