@@ -3,7 +3,7 @@
 // =============================================================================
 
 const COLLECTION_NAME = 'pet_products';
-const VECTOR_DIM = 512; // OpenAI text-embedding-3-small (reduced from 1536)
+const VECTOR_DIM = 1024; // Qwen3-Embedding-8B via OpenRouter
 
 function getConfig() {
   const endpoint = process.env.ZILLIZ_ENDPOINT;
@@ -134,32 +134,34 @@ export async function createCollection(): Promise<void> {
 }
 
 // =============================================================================
-// Embedding using OpenAI (text-embedding-3-small)
+// Embedding using Qwen3-Embedding-8B via OpenRouter
 // =============================================================================
 
 async function generateEmbedding(text: string): Promise<number[]> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.OPENROUTER_EMBEDDING_KEY || process.env.OPENROUTER_API_KEY;
 
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY required for embeddings');
+    throw new Error('OPENROUTER_EMBEDDING_KEY (or OPENROUTER_API_KEY) required for embeddings');
   }
 
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
+  const response = await fetch('https://openrouter.ai/api/v1/embeddings', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
+      'HTTP-Referer': 'https://petcare.app',
+      'X-Title': 'PetCare Chat',
     },
     body: JSON.stringify({
-      model: 'text-embedding-3-small',
+      model: 'qwen/qwen3-embedding-8b',
       input: text,
-      dimensions: VECTOR_DIM, // Reduce dimensions to save cost
+      dimensions: VECTOR_DIM,
     }),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`OpenAI Embedding error: ${response.status} - ${error}`);
+    throw new Error(`OpenRouter Embedding error: ${response.status} - ${error}`);
   }
 
   const data = await response.json();

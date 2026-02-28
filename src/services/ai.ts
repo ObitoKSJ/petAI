@@ -23,28 +23,12 @@ type ProviderConfig = {
 
 const PROVIDERS: Record<string, ProviderConfig> = {
   kimi: {
-    baseUrl: 'https://api.moonshot.cn/v1',
-    model: 'kimi-k2-turbo-preview',
-    visionModel: 'kimi-k2.5',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    model: 'moonshotai/kimi-k2-0905',
+    visionModel: 'moonshotai/kimi-k2.5',
     temperature: 1, // K2.5 requires temperature=1
     supportsVision: true,
   },
-  openai: {
-    baseUrl: 'https://api.openai.com/v1',
-    model: 'gpt-5-nano-2025-08-07',
-    visionModel: 'gpt-5-nano-2025-08-07',
-    supportsVision: true,
-    useMaxCompletionTokens: true, // GPT-5 models require this
-  },
-  deepseek: {
-    baseUrl: 'https://api.deepseek.com/v1',
-    model: 'deepseek-chat',
-    visionModel: 'deepseek-chat',
-    supportsVision: false,
-  },
-  // Add more providers as needed:
-  // anthropic: { baseUrl: 'https://api.anthropic.com/v1', ... },
-  // groq: { baseUrl: 'https://api.groq.com/openai/v1', ... },
 };
 
 // =============================================================================
@@ -116,13 +100,8 @@ export class AIService {
     }
     this.config = config;
 
-    // API key: try provider-specific first, then generic
-    this.apiKey = process.env.AI_API_KEY || process.env[`${this.provider.toUpperCase()}_API_KEY`] || '';
-
-    // Allow base URL override
-    if (process.env.AI_BASE_URL) {
-      this.config = { ...this.config, baseUrl: process.env.AI_BASE_URL };
-    }
+    // API key: OpenRouter key or generic fallback
+    this.apiKey = process.env.OPENROUTER_API_KEY || process.env.AI_API_KEY || '';
   }
 
   async chat(
@@ -133,7 +112,7 @@ export class AIService {
     // Collect products from tool calls
     const collectedProducts: Product[] = [];
     if (!this.apiKey) {
-      throw new Error(`API key not configured. Set AI_API_KEY or ${this.provider.toUpperCase()}_API_KEY`);
+      throw new Error('API key not configured. Set OPENROUTER_API_KEY in your environment.');
     }
 
     const hasImages = images && images.length > 0;
@@ -220,6 +199,8 @@ export class AIService {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.apiKey}`,
+          'HTTP-Referer': 'https://petcare.app',
+          'X-Title': 'PetCare Chat',
         },
         body: JSON.stringify(requestBody),
       });
