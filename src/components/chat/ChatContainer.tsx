@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader } from 'lucide-react';
+import { Loader, Languages, LogOut, User, SquarePen } from 'lucide-react';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { EmergencyPrompts } from './EmergencyPrompts';
@@ -52,8 +52,11 @@ export function ChatContainer() {
   const { t } = useTranslation();
   const router = useRouter();
 
-  const [showHistory, setShowHistory] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerVisible, setDrawerVisible] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [username, setUsername] = useState<string>('');
+  const { locale, setLocale } = useTranslation();
 
   // Auto-scroll hook with anchor-to-top pattern
   const { containerRef, anchorRef, isAtBottom, scrollToAnchor } = useAutoScroll({
@@ -124,15 +127,29 @@ export function ChatContainer() {
     }
   }, []);
 
-  const handleOpenHistory = useCallback(() => {
-    setShowHistory(true);
+  // Fetch username on mount
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => { if (data?.username) setUsername(data.username); })
+      .catch(() => {});
+  }, []);
+
+  const openDrawer = useCallback(() => {
+    setDrawerOpen(true);
+    requestAnimationFrame(() => setDrawerVisible(true));
     fetchConversations();
   }, [fetchConversations]);
 
+  const closeDrawer = useCallback(() => {
+    setDrawerVisible(false);
+    setTimeout(() => setDrawerOpen(false), 300);
+  }, []);
+
   const handleSelectConversation = useCallback((id: string) => {
     loadConversation(id);
-    setShowHistory(false);
-  }, [loadConversation]);
+    closeDrawer();
+  }, [loadConversation, closeDrawer]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -145,31 +162,51 @@ export function ChatContainer() {
 
   return (
     <div className="relative h-full bg-background">
-      {/* Conversation History Drawer */}
-      {showHistory && (
+      {/* Left Navigation Drawer */}
+      {drawerOpen && (
         <div className="fixed inset-0 z-30 flex">
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setShowHistory(false)}
+            className={cn(
+              'absolute inset-0 bg-black/30 transition-opacity duration-300',
+              drawerVisible ? 'opacity-100' : 'opacity-0'
+            )}
+            onClick={closeDrawer}
           />
           {/* Drawer */}
-          <div className="relative w-72 max-w-[80vw] h-full bg-background shadow-xl overflow-y-auto pt-safe">
-            <div className="p-4">
-              <h2 className="text-lg font-semibold text-foreground/80 mb-4">
+          <div
+            className={cn(
+              'relative w-72 max-w-[80vw] h-full bg-background shadow-xl flex flex-col pt-safe',
+              'transition-transform duration-300 ease-out',
+              drawerVisible ? 'translate-x-0' : '-translate-x-full'
+            )}
+          >
+            {/* Top: New Chat + History */}
+            <div className="flex-1 overflow-y-auto px-2 pt-4">
+              {/* New Chat Button */}
+              <button
+                onClick={() => { newConversation(); closeDrawer(); }}
+                className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-foreground/70 hover:bg-foreground/5 active:bg-foreground/8 transition-colors mb-3"
+              >
+                <SquarePen className="size-4" strokeWidth={1.5} />
+                <span>{locale === 'zh' ? '新对话' : 'New chat'}</span>
+              </button>
+
+              {/* History Label */}
+              <h2 className="text-xs font-semibold text-foreground/40 uppercase tracking-wider mb-2 px-2">
                 {t('history.title') || 'Chat History'}
               </h2>
               {conversations.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t('history.empty') || 'No conversations yet'}</p>
+                <p className="text-sm text-muted-foreground px-2">{t('history.empty') || 'No conversations yet'}</p>
               ) : (
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-0.5">
                   {conversations.map((convo) => (
                     <button
                       key={convo.id}
                       onClick={() => handleSelectConversation(convo.id)}
                       className={cn(
-                        'text-left px-3 py-2 rounded-lg text-sm transition-colors',
-                        'hover:bg-foreground/5',
+                        'text-left px-2 py-2.5 rounded-lg text-sm transition-colors',
+                        'hover:bg-foreground/5 active:bg-foreground/8',
                         convo.id === conversationId && 'bg-primary/10 text-primary'
                       )}
                     >
@@ -184,17 +221,42 @@ export function ChatContainer() {
                 </div>
               )}
             </div>
+
+            {/* Bottom Section */}
+            <div className="px-2 py-4 pb-safe space-y-1">
+              {/* Language Switch */}
+              <button
+                onClick={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
+                className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-foreground/60 hover:bg-foreground/5 active:bg-foreground/8 transition-colors"
+              >
+                <Languages className="size-4" strokeWidth={1.5} />
+                <span>{locale === 'zh' ? 'English' : '中文'}</span>
+              </button>
+
+              {/* Logout */}
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-sm text-foreground/60 hover:bg-foreground/5 active:bg-foreground/8 transition-colors"
+              >
+                <LogOut className="size-4" strokeWidth={1.5} />
+                <span>{locale === 'zh' ? '登出' : 'Log out'}</span>
+              </button>
+
+              {/* User Profile */}
+              <div className="flex items-center gap-3 px-2 py-3">
+                <User className="size-4 text-primary flex-shrink-0" strokeWidth={1.5} />
+                <span className="text-sm font-medium text-foreground/80 truncate">
+                  {username || 'User'}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* Header - fixed at top */}
       <div className="fixed top-0 left-0 right-0 z-20 pt-safe">
-        <Header
-          onNewChat={newConversation}
-          onOpenHistory={handleOpenHistory}
-          onLogout={handleLogout}
-        />
+        <Header onOpenDrawer={openDrawer} />
       </div>
 
       {/* Messages area - scrollable with elastic overscroll */}
