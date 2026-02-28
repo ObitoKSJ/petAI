@@ -163,7 +163,7 @@ await insertProduct({
 });
 ```
 
-Available product categories: `wound-care`, `digestive-health`, `ear-care`, `eye-care`, `skin-care`, `allergy-relief`, `anxiety-relief`, `first-aid`, `dental-care`, `joint-health`, `flea-tick`, `nutrition`.
+Available product categories: `wound-care`, `digestive-health`, `ear-care`, `eye-care`, `skin-care`, `allergy-relief`, `anxiety-relief`, `first-aid`, `dental-care`, `joint-health`, `pest-prevention`, `nutrition`.
 
 ## Project Structure
 
