@@ -1,5 +1,8 @@
 import dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
+
+const provider = process.env.CLOUD_PROVIDER ?? 'vercel';
+dotenv.config({ path: provider === 'tencent' ? '.env.tencent.local' : '.env.vercel.local' });
+
 import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({

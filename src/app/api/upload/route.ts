@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
 import { getCurrentUser } from '@/lib/auth.server';
+import { storage } from '@/lib/storage';
 
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
@@ -16,11 +16,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    const blob = await put(`chat-images/${user.userId}/${Date.now()}-${file.name}`, file, {
+    const key = `chat-images/${user.userId}/${Date.now()}-${file.name}`;
+
+    const stored = await storage.upload(key, file, {
       access: 'public',
+      contentType: file.type || undefined,
     });
 
-    return NextResponse.json({ url: blob.url });
+    return NextResponse.json({ url: stored.url });
   } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
