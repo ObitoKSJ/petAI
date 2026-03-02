@@ -4,7 +4,8 @@
  */
 
 import { config } from 'dotenv';
-config({ path: '.env.local' });
+// Load .env.local as fallback only if vars aren't already set (e.g. via dotenv-cli)
+config({ path: '.env.local', override: false });
 
 import { createCollection, dropCollection, insertProducts, type Product } from '../src/services/zilliz';
 

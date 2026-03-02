@@ -5,11 +5,20 @@ dotenv.config({ path: provider === 'tencent' ? '.env.tencent.local' : '.env.verc
 
 import { defineConfig } from 'drizzle-kit';
 
+const dbCredentials = provider === 'tencent'
+  ? {
+      host:     process.env.TENCENT_PG_HOST!,
+      port:     Number(process.env.TENCENT_PG_PORT ?? 5432),
+      user:     process.env.TENCENT_PG_USER!,
+      password: process.env.TENCENT_PG_PASSWORD!,
+      database: process.env.TENCENT_PG_DATABASE ?? 'postgres',
+      ssl:      false,
+    }
+  : { url: process.env.POSTGRES_URL! };
+
 export default defineConfig({
   schema: './src/db/schema.ts',
   out: './drizzle',
   dialect: 'postgresql',
-  dbCredentials: {
-    url: process.env.POSTGRES_URL!,
-  },
+  dbCredentials,
 });
